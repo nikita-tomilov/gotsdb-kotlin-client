@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package proto;
+
+service GoTSDB {
+  rpc KvsSave(KvsStoreRequest) returns (KvsStoreResponse);
+  rpc KvsKeyExists(KvsKeyExistsRequest) returns (KvsKeyExistsResponse);
+  rpc KvsRetrieve(KvsRetrieveRequest) returns (KvsRetrieveResponse);
+  rpc KvsDelete(KvsDeleteRequest) returns (KvsDeleteResponse);
+  rpc KvsGetKeys(KvsAllKeysRequest) returns (KvsAllKeysResponse);
+
+  rpc TSSave(TSStoreRequest) returns (TSStoreResponse);
+  rpc TSRetrieve(TSRetrieveRequest) returns (TSRetrieveResponse);
+}
+
+message KvsStoreRequest {
+  uint32 msgId = 1;
+  bytes key = 2;
+  bytes value = 3;
+}
+
+message KvsStoreResponse {
+  uint32 msgId = 1;
+  bool ok = 2;
+}
+
+message KvsKeyExistsRequest {
+  uint32 msgId = 1;
+  bytes key = 2;
+}
+
+message KvsKeyExistsResponse {
+  uint32 msgId = 1;
+  bool exists = 2;
+}
+
+message KvsRetrieveRequest {
+  uint32 msgId = 1;
+  bytes key = 2;
+}
+
+message KvsRetrieveResponse {
+  uint32 msgId = 1;
+  bytes value = 2;
+}
+
+message KvsDeleteRequest {
+  uint32 msgId = 1;
+  bytes key = 2;
+}
+
+message KvsDeleteResponse {
+  uint32 msgId = 1;
+  bool ok = 2;
+}
+
+message KvsAllKeysRequest {
+  uint32 msgId = 1;
+}
+
+message KvsAllKeysResponse {
+  uint32 msgId = 1;
+  repeated bytes keys = 2;
+}
+
+message TSPoints {
+  map<uint64, double> points = 1;
+}
+
+message TSStoreRequest {
+  uint32 msgId = 1;
+  string dataSource = 2;
+  map<string, TSPoints> values = 3;
+  uint64 expirationMillis = 4;
+}
+
+message TSStoreResponse {
+  uint32 msgId = 1;
+  bool ok = 2;
+}
+
+message TSRetrieveRequest {
+  uint32 msgId = 1;
+  string dataSource = 2;
+  uint64 fromTimestamp = 3;
+  uint64 toTimestamp = 4;
+  repeated string tags = 5;
+}
+
+message TSRetrieveResponse {
+  uint32 msgId = 1;
+  string dataSource = 2;
+  uint64 fromTimestamp = 3;
+  uint64 toTimestamp = 4;
+  map<string, TSPoints> values = 5;
+}
