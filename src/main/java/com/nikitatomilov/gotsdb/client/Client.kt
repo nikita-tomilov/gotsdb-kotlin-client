@@ -4,7 +4,6 @@ import com.google.protobuf.ByteString
 import io.grpc.ManagedChannelBuilder
 import proto.GoTSDBGrpc
 import proto.Rpc
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 class Client(
@@ -13,8 +12,6 @@ class Client(
 ) {
 
   private lateinit var rpc: GoTSDBGrpc.GoTSDBFutureStub
-
-  private val executor = Executors.newSingleThreadExecutor()
 
   private val messageId = AtomicInteger(0)
 
