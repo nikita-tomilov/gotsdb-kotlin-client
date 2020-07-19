@@ -2,7 +2,7 @@ package com.nikitatomilov.gotsdb.client
 
 import mu.KLogging
 
-object ClientTest : KLogging() {
+object KeyValueSaveDemo : KLogging() {
   @JvmStatic
   fun main(args: Array<String>) {
     val client = Client("127.0.0.1", 5300)
