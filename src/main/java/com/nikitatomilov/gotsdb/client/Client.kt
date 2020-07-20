@@ -1,6 +1,8 @@
 package com.nikitatomilov.gotsdb.client
 
 import com.google.common.collect.Range
+import com.google.common.collect.RangeSet
+import com.google.common.collect.TreeRangeSet
 import com.google.protobuf.ByteString
 import io.grpc.ManagedChannelBuilder
 import mu.KLogging
@@ -103,6 +105,24 @@ class Client(
             .setToTimestamp(domain.upperEndpoint().toEpochMilli())
             .build())
     return responseFuture.get().valuesMap.map { it.key to it.value.pointsMap }.toMap()
+  }
+
+  fun availability(
+    dataSource: String,
+    domain: Range<Instant>
+  ): RangeSet<Instant> {
+    val responseFuture = rpc.tSAvailability(
+        Rpc.TSAvailabilityRequest.newBuilder()
+            .setMsgId(messageId.incrementAndGet())
+            .setDataSource(dataSource)
+            .setFromTimestamp(domain.lowerEndpoint().toEpochMilli())
+            .setToTimestamp(domain.upperEndpoint().toEpochMilli())
+            .build())
+    return TreeRangeSet.create(responseFuture.get().availabilityList.map {
+      Range.closed(
+          Instant.ofEpochMilli(
+              it.fromTimestamp), Instant.ofEpochMilli(it.toTimestamp))
+    })
   }
 
   private fun Map<String, Map<Long, Double>>.toRpcData(): Map<String, Rpc.TSPoints> {
