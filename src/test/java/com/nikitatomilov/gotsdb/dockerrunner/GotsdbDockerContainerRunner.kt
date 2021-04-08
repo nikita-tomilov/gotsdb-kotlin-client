@@ -3,6 +3,10 @@ package com.nikitatomilov.gotsdb.dockerrunner
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Frame
 import com.github.dockerjava.core.command.LogContainerResultCallback
+import com.nikitatomilov.gotsdb.client.DBConfigs.APP_CONFIG_FILE_NAME
+import com.nikitatomilov.gotsdb.client.DBConfigs.LOG_FILE_NAME
+import com.nikitatomilov.gotsdb.client.DBConfigs.getLogFileContent
+import com.nikitatomilov.gotsdb.client.DBMainConfigBuilder
 import mu.KLogging
 import java.io.File
 import java.nio.file.Files
@@ -21,7 +25,7 @@ class GotsdbDockerContainerRunner(
   //docker run -v `pwd`/config:/config -p 5300:5300 -p 5123:5123 gotsdb-srv:latest
   fun setupContainer() {
     val tmp = createTempConfigDirectory()
-    val cmd = dockerClient.createContainerCmd("gotsdb-srv:latest")
+    val cmd = dockerClient.createContainerCmd("gotsdb-srv:v0.2")
         .withName(nodeName)
         .withDomainName("localhost")
         .withPortBindings(
@@ -72,33 +76,7 @@ class GotsdbDockerContainerRunner(
     return tmp
   }
 
-  private fun getAppFileContent() = """
-    grpc.listenAddress=0.0.0.0:5300
-    kvs.engine=file
-    kvs.fileKVSPath=/tmp/gotsdb/kvs
-    tss.engine=lsm
-    tss.filePath=/tmp/gotsdb/tss
-    server.mode=$clusterMode
-    #cluster, single-instance
-    cluster.listenAddress=localhost:5123
-    cluster.knownNodes=$clusterNodesString
-    cluster.readingConsistency=none
-    #none, any, all
-    cluster.writingConsistency=none
-    """.trimIndent()
+  private fun getAppFileContent() = DBMainConfigBuilder().contents()
 
-  companion object : KLogging() {
-    const val LOG_FILE_NAME = "log4go.json"
-    fun getLogFileContent() = """
-      {
-        "console": {
-          "enable": true,
-          "level": "INFO",
-          "pattern": "[%D %T] [%S] [%L] %M"
-        }
-      }
-    """.trimIndent()
-
-    const val APP_CONFIG_FILE_NAME = "app.properties"
-  }
+  companion object : KLogging()
 }

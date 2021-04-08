@@ -6,8 +6,7 @@ import com.google.common.collect.TreeRangeSet
 import com.google.protobuf.ByteString
 import io.grpc.ManagedChannelBuilder
 import mu.KLogging
-import proto.GoTSDBGrpc
-import proto.Rpc
+import com.nikitatomilov.gotsdb.api.*
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
@@ -36,7 +35,7 @@ class Client(
 
   fun save(key: ByteArray, value: ByteArray) {
     val responseFuture = rpc.kvsSave(
-        Rpc.KvsStoreRequest.newBuilder()
+        Api.KvsStoreRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setKey(ByteString.copyFrom(key))
             .setValue(ByteString.copyFrom(value))
@@ -46,7 +45,7 @@ class Client(
 
   fun retrieve(key: ByteArray): ByteArray {
     val responseFuture = rpc.kvsRetrieve(
-        Rpc.KvsRetrieveRequest.newBuilder()
+        Api.KvsRetrieveRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setKey(ByteString.copyFrom(key))
             .build())
@@ -55,7 +54,7 @@ class Client(
 
   fun keyExists(key: ByteArray): Boolean {
     val responseFuture = rpc.kvsKeyExists(
-        Rpc.KvsKeyExistsRequest.newBuilder()
+        Api.KvsKeyExistsRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setKey(ByteString.copyFrom(key))
             .build())
@@ -64,7 +63,7 @@ class Client(
 
   fun deleteKey(key: ByteArray) {
     val responseFuture = rpc.kvsDelete(
-        Rpc.KvsDeleteRequest.newBuilder()
+        Api.KvsDeleteRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setKey(ByteString.copyFrom(key))
             .build())
@@ -74,7 +73,7 @@ class Client(
   fun listKeys(): List<ByteArray> {
     val responseFuture =
         rpc.kvsGetKeys(
-            Rpc.KvsAllKeysRequest.newBuilder()
+            Api.KvsAllKeysRequest.newBuilder()
                 .setMsgId(messageId.incrementAndGet())
                 .build())
     return responseFuture.get().keysList.map { it.toByteArray() }
@@ -82,12 +81,22 @@ class Client(
 
   fun save(dataSource: String, data: Map<String, Map<Long, Double>>, expiration: Duration) {
     val responseFuture = rpc.tSSave(
-        Rpc.TSStoreRequest.newBuilder()
+        Api.TSStoreRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setDataSource(dataSource)
-            .putAllValues(data.toRpcData())
+            .putAllValues(data.toApiData())
             .setExpirationMillis(expiration.toMillis())
             .build())
+    responseFuture.get()
+  }
+
+  fun saveBatch(dataSource: String, data: List<Api.TSPoint>, expiration: Duration) {
+    val responseFuture = rpc.tSSaveBatch(Api.TSStoreBatchRequest.newBuilder()
+        .setMsgId(messageId.incrementAndGet())
+        .setDataSource(dataSource)
+        .addAllDataBatch(data)
+        .setExpirationMillis(expiration.toMillis())
+        .build())
     responseFuture.get()
   }
 
@@ -97,7 +106,7 @@ class Client(
     domain: Range<Instant>
   ): Map<String, Map<Long, Double>> {
     val responseFuture = rpc.tSRetrieve(
-        Rpc.TSRetrieveRequest.newBuilder()
+        Api.TSRetrieveRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setDataSource(dataSource)
             .addAllTags(tags)
@@ -112,7 +121,7 @@ class Client(
     domain: Range<Instant>
   ): RangeSet<Instant> {
     val responseFuture = rpc.tSAvailability(
-        Rpc.TSAvailabilityRequest.newBuilder()
+        Api.TSAvailabilityRequest.newBuilder()
             .setMsgId(messageId.incrementAndGet())
             .setDataSource(dataSource)
             .setFromTimestamp(domain.lowerEndpoint().toEpochMilli())
@@ -125,9 +134,9 @@ class Client(
     })
   }
 
-  private fun Map<String, Map<Long, Double>>.toRpcData(): Map<String, Rpc.TSPoints> {
+  private fun Map<String, Map<Long, Double>>.toApiData(): Map<String, Api.TSPoints> {
     return this.map {
-      it.key to Rpc.TSPoints.newBuilder()
+      it.key to Api.TSPoints.newBuilder()
           .putAllPoints(it.value)
           .build()
     }.toMap()
