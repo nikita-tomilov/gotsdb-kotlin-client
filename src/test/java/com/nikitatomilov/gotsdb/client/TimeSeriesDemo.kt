@@ -27,14 +27,18 @@ object TimeSeriesDemo : KLogging() {
     availability.asRanges().forEach {
       logger.warn { " - ${it.lowerEndpoint()} to ${it.upperEndpoint()}" }
     }
+
+    val c = "cchannel0"
+    val retrieved = client.retrieve(datasource, setOf(c), availability.asRanges().first())
+    logger.warn { "Data for $c has ${retrieved[c]?.size ?: -1} points" }
   }
 
   private fun buildDummyData(): Map<String, Map<Long, Double>> {
     return (0 until 10)
         .map { "cchannel$it" }
         .associateWith {
-          val from = Instant.now().toEpochMilli()
-          val to = from + 60 * 60 * 1000
+          val to = Instant.now().toEpochMilli() - 10000L
+          val from = to - 60 * 60 * 1000
           (from until to step 1000).map { it to (it - from) * 0.00001 }.toMap()
         }
   }
