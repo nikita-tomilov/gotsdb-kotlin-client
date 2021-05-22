@@ -25,6 +25,8 @@ class Client(
         .usePlaintext()
         .disableRetry()
         .keepAliveWithoutCalls(true)
+        .maxInboundMessageSize(Int.MAX_VALUE)
+        .maxInboundMetadataSize(Int.MAX_VALUE)
         .build()
     rpc = GoTSDBGrpc.newFutureStub(channel)
     logger.warn { "Connection succeeded" }
